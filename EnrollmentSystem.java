@@ -23,10 +23,12 @@ class Student {
 class Course {
     private String code;
     private String title;
+    private int capacity;
 
-    public Course(String code, String title) {
+    public Course(String code, String title, int capacity) {
         this.code = code;
         this.title = title;
+        this.capacity = capacity;
     }
 
     public String getCode() {
@@ -35,6 +37,10 @@ class Course {
 
     public String getTitle() {
         return title;
+    }
+
+    public int getCapacity() {
+        return capacity;
     }
 }
 
@@ -62,7 +68,9 @@ class Enrollment {
     }
 
     public void setGrade(double grade) {
-        this.grade = grade;
+        if (grade >= 0 && grade <= 100) {
+            this.grade = grade;
+        }
     }
 
     public String getStatus() {
@@ -86,8 +94,8 @@ public class EnrollmentSystem {
         Course[] courses = new Course[10];
         Enrollment[] enrollments = new Enrollment[20];
 
-        int studentCount = 0;
-        int courseCount = 0;
+        int studentCount;
+        int courseCount;
         int enrollmentCount = 0;
 
         System.out.print("Enter number of students: ");
@@ -95,6 +103,7 @@ public class EnrollmentSystem {
         sc.nextLine();
 
         for (int i = 0; i < studentCount; i++) {
+
             System.out.print("Student ID: ");
             String id = sc.nextLine();
 
@@ -109,18 +118,24 @@ public class EnrollmentSystem {
         sc.nextLine();
 
         for (int i = 0; i < courseCount; i++) {
+
             System.out.print("Course Code: ");
             String code = sc.nextLine();
 
             System.out.print("Course Title: ");
             String title = sc.nextLine();
 
-            courses[i] = new Course(code, title);
+            System.out.print("Course Capacity: ");
+            int capacity = sc.nextInt();
+            sc.nextLine();
+
+            courses[i] = new Course(code, title, capacity);
         }
 
         int choice;
 
         do {
+
             System.out.println("\n===== MENU =====");
             System.out.println("1. Enroll Student");
             System.out.println("2. Assign Grade");
@@ -158,33 +173,44 @@ public class EnrollmentSystem {
                         }
                     }
 
-                    if (foundStudent != null && foundCourse != null) {
-
-                        boolean duplicate = false;
-
-                        for (int i = 0; i < enrollmentCount; i++) {
-                            if (enrollments[i].getStudent().getId().equalsIgnoreCase(sid)
-                                    && enrollments[i].getCourse().getCode().equalsIgnoreCase(ccode)) {
-
-                                duplicate = true;
-                            }
-                        }
-
-                        if (duplicate) {
-                            System.out.println("Duplicate enrollment not allowed.");
-                        } else {
-                            enrollments[enrollmentCount] =
-                                    new Enrollment(foundStudent, foundCourse);
-
-                            enrollmentCount++;
-
-                            System.out.println("Enrollment successful!");
-                        }
-
-                    } else {
+                    if (foundStudent == null || foundCourse == null) {
                         System.out.println("Student or Course not found.");
+                        break;
                     }
 
+                    boolean duplicate = false;
+
+                    for (int i = 0; i < enrollmentCount; i++) {
+                        if (enrollments[i].getStudent().getId().equalsIgnoreCase(sid)
+                                && enrollments[i].getCourse().getCode().equalsIgnoreCase(ccode)) {
+                            duplicate = true;
+                        }
+                    }
+
+                    if (duplicate) {
+                        System.out.println("Duplicate enrollment not allowed.");
+                        break;
+                    }
+
+                    int enrolledStudents = 0;
+
+                    for (int i = 0; i < enrollmentCount; i++) {
+                        if (enrollments[i].getCourse().getCode().equalsIgnoreCase(ccode)) {
+                            enrolledStudents++;
+                        }
+                    }
+
+                    if (enrolledStudents >= foundCourse.getCapacity()) {
+                        System.out.println("Course is FULL.");
+                        break;
+                    }
+
+                    enrollments[enrollmentCount] =
+                            new Enrollment(foundStudent, foundCourse);
+
+                    enrollmentCount++;
+
+                    System.out.println("Enrollment Successful!");
                     break;
 
                 case 2:
@@ -199,14 +225,22 @@ public class EnrollmentSystem {
                     double grade = sc.nextDouble();
                     sc.nextLine();
 
+                    boolean updated = false;
+
                     for (int i = 0; i < enrollmentCount; i++) {
 
                         if (enrollments[i].getStudent().getId().equalsIgnoreCase(sid)
                                 && enrollments[i].getCourse().getCode().equalsIgnoreCase(ccode)) {
 
                             enrollments[i].setGrade(grade);
-                            System.out.println("Grade updated.");
+                            updated = true;
+
+                            System.out.println("Grade Updated.");
                         }
+                    }
+
+                    if (!updated) {
+                        System.out.println("Enrollment not found.");
                     }
 
                     break;
@@ -217,9 +251,9 @@ public class EnrollmentSystem {
                     sid = sc.nextLine();
 
                     double total = 0;
-                    int count = 0;
+                    int graded = 0;
 
-                    System.out.println("\nSTUDENT REPORT");
+                    System.out.println("\n===== STUDENT REPORT =====");
 
                     for (int i = 0; i < enrollmentCount; i++) {
 
@@ -234,13 +268,13 @@ public class EnrollmentSystem {
 
                             if (enrollments[i].getGrade() != -1) {
                                 total += enrollments[i].getGrade();
-                                count++;
+                                graded++;
                             }
                         }
                     }
 
-                    if (count > 0) {
-                        System.out.println("Average: " + (total / count));
+                    if (graded > 0) {
+                        System.out.printf("Average: %.2f%n", total / graded);
                     }
 
                     break;
@@ -250,7 +284,7 @@ public class EnrollmentSystem {
                     System.out.print("Course Code: ");
                     ccode = sc.nextLine();
 
-                    System.out.println("\nCOURSE ROSTER");
+                    System.out.println("\n===== COURSE ROSTER =====");
 
                     for (int i = 0; i < enrollmentCount; i++) {
 
@@ -269,28 +303,28 @@ public class EnrollmentSystem {
 
                 case 5:
 
-                    int graded = 0;
+                    int gradedCount = 0;
 
                     for (int i = 0; i < enrollmentCount; i++) {
                         if (enrollments[i].getGrade() != -1) {
-                            graded++;
+                            gradedCount++;
                         }
                     }
 
-                    System.out.println("\nSYSTEM SUMMARY");
+                    System.out.println("\n===== SYSTEM SUMMARY =====");
                     System.out.println("Total Students: " + studentCount);
                     System.out.println("Total Courses: " + courseCount);
                     System.out.println("Total Enrollments: " + enrollmentCount);
-                    System.out.println("Graded Enrollments: " + graded);
+                    System.out.println("Graded Enrollments: " + gradedCount);
 
                     break;
 
                 case 0:
-                    System.out.println("Goodbye!");
+                    System.out.println("Program Ended.");
                     break;
 
                 default:
-                    System.out.println("Invalid choice.");
+                    System.out.println("Invalid Choice.");
             }
 
         } while (choice != 0);
